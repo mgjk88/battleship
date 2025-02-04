@@ -6,4 +6,14 @@ export default [
   { ignores: ["webpack/*"] },
   pluginJs.configs.recommended,
   eslintConfigPrettier,
+  {
+    overrides: [
+      {
+        files: ["tests/**/*"],
+        env: {
+          jest: true,
+        },
+      },
+    ],
+  },
 ];
