@@ -19,11 +19,11 @@ class Ship {
 class Gameboard {
   constructor() {
     this.ships = [];
-    this.board = new Array(10).fill(null).map(() => new Array(10).fill(null));
+    this.grid = new Array(10).fill(null).map(() => new Array(10).fill(null));
     this.miss = [];
   }
 
-  static #inBoard(x, y) {
+  static #inGrid(x, y) {
     return x >= 0 && x < 10 && y >= 0 && y < 10;
   }
 
@@ -34,15 +34,15 @@ class Gameboard {
       for (let arg of arguments) {
         if (
           typeof arg !== "number" ||
-          !Gameboard.#inBoard(x1, y1) ||
-          !Gameboard.#inBoard(x2, y2)
+          !Gameboard.#inGrid(x1, y1) ||
+          !Gameboard.#inGrid(x2, y2)
         )
           throw new Error("Invalid Coordinates!");
       }
 
       for (let x = x1; x <= x2; x += 1) {
         for (let y = y1; y <= y2; y += 1) {
-          if (this.board[y][x] !== null)
+          if (this.grid[y][x] !== null)
             throw new Error("Coordinates conflict with existing ship!");
         }
       }
@@ -60,25 +60,25 @@ class Gameboard {
 
     if (constAxis === "x") {
       for (let y = y1; y <= y2; y += 1) {
-        this.board[y][x1] = idx;
+        this.grid[y][x1] = idx;
       }
     } else {
       for (let x = x1; x <= x2; x += 1) {
-        this.board[y1][x] = idx;
+        this.grid[y1][x] = idx;
       }
     }
   }
 
   receiveAttack(x, y) {
     const isValid = (x, y) => {
-      return typeof(x) === 'number' && typeof(y) === 'number' && Gameboard.#inBoard(x, y)
+      return typeof(x) === 'number' && typeof(y) === 'number' && Gameboard.#inGrid(x, y)
     };
     if(!isValid(x,y)) throw new Error("Invalid Coordinates!");
-    if(this.board[y][x] === null) {
+    if(this.grid[y][x] === null) {
       this.miss.push([x,y])
       return;
     };
-    this.ships[this.board[y][x]].hit();
+    this.ships[this.grid[y][x]].hit();
   }
 
   allSunk(){
