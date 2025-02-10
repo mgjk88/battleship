@@ -38,12 +38,13 @@ describe.only("class Gameboard", () => {
 
     test(".receiveAttack(x, y) records miss",()=>{
       board.receiveAttack(1,1);
-      expect(board.miss[0]).toEqual([1,1]);
+      expect(board.misses[0]).toEqual([1,1]);
     });
 
     test(".receiveAttack(x, y) records hit",()=>{
       board.receiveAttack(0,0);
-      expect(board.ships[board.board[0][0]].isSunk()).toBeTruthy();
+      expect(board.ships[board.grid[0][0]].isSunk()).toBeTruthy();
+      expect(board.hits[0]).toEqual([0,0]);
     });
 
     test(".allSunk detects not all ships are sunk", () => {

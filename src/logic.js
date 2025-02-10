@@ -20,7 +20,8 @@ class Gameboard {
   constructor() {
     this.ships = [];
     this.grid = new Array(10).fill(null).map(() => new Array(10).fill(null));
-    this.miss = [];
+    this.hits = [];
+    this.misses = [];
   }
 
   static #inGrid(x, y) {
@@ -28,7 +29,7 @@ class Gameboard {
   }
 
   place(x1, y1, x2, y2) {
-    const isValid = (x1, y1, x2, y2) => {
+    const coordsChkr = (x1, y1, x2, y2) => {
       if (x1 !== x2 && y1 !== y2) throw new Error("Invalid Orientation!");
 
       for (let arg of arguments) {
@@ -51,7 +52,7 @@ class Gameboard {
     if (x1 > x2) [x1, x2] = [x2, x1];
     if (y1 > y2) [y1, y2] = [y2, y1];
 
-    isValid(x1, y1, x2, y2);
+    coordsChkr(x1, y1, x2, y2);
     let constAxis = x1 === x2 ? "x" : "y";
     let len = x2 - x1 + y2 - y1 + 1;
     //at least one pair will cancel themselves out
@@ -70,29 +71,115 @@ class Gameboard {
   }
 
   receiveAttack(x, y) {
-    const isValid = (x, y) => {
-      return typeof(x) === 'number' && typeof(y) === 'number' && Gameboard.#inGrid(x, y)
+    //hits are recorded as -1 and misses are recorded as -2 in the game grid
+    const coordsChkr = (x, y) => {
+      if (
+        typeof x !== "number" ||
+        typeof y !== "number" ||
+        !Gameboard.#inGrid(x, y)
+      )
+        throw new Error("Invalid Coordinates!");
     };
-    if(!isValid(x,y)) throw new Error("Invalid Coordinates!");
-    if(this.grid[y][x] === null) {
-      this.miss.push([x,y])
+
+    coordsChkr(x, y);
+    if (this.grid[y][x] === null) {
+      this.misses.push([x, y]);
       return;
-    };
+    }
     this.ships[this.grid[y][x]].hit();
+    this.hits.push([x, y]);
   }
 
-  allSunk(){
-    for(let ship of this.ships){
-      if(ship.isSunk() === false) return false;
+  allSunk() {
+    for (let ship of this.ships) {
+      if (ship.isSunk() === false) return false;
     }
     return true;
   }
 }
 
-class Player{
-  constructor(type){
+class Player {
+  constructor(type, id) {
+    this.id = id;
+    this.enemy = null;
     this.type = type;
     this.board = new Gameboard();
+    this.moves = new Set();
+  }
+
+  static randShips(ships, board) {
+    const randOneToNine = () => Math.floor(Math.random() * 10);
+    const randZeroOne = () => Math.floor(Math.random() * 2);
+    for (let name of Object.keys(ships)) {
+      while (true) {
+        try {
+          let x2 = randOneToNine();
+          let y2 = randOneToNine();
+          let x1 = null;
+          let y1 = null;
+          if (randZeroOne()) {
+            x1 = x2 - ships[name] + 1;
+            y1 = y2;
+          } else {
+            x1 = x2;
+            y1 = y2 - ships[name] + 1;
+          }
+          board.place(x1, y1, x2, y2);
+          break;
+        } catch {
+          continue;
+        }
+      }
+    }
+  }
+
+  computerAttack(target) {
+    if (this.type === "player")
+      throw new Error("Player cannot use computer to pick attack!");
+
+    const randOneToNine = () => Math.floor(Math.random() * 10);
+    const tryOneNearHit = (hits) => {
+      if (hits.length === 0) return false;
+      let dirs = [
+        [-1, 0],
+        [0, 1],
+        [1, 0],
+        [0, -1],
+      ];
+      for (let coord of hits) {
+        let [r, c] = [coord[1], coord[0]];
+        for (let dir of dirs) {
+          let [dr, dc] = [dir[0], dir[1]];
+          let test = [c + dc, r + dr]; //coords in form [x,y]
+          if (
+            test[0] >= 0 &&
+            test[0] < 10 &&
+            test[1] >= 0 &&
+            test[1] < 10 &&
+            !this.moves.has(`${test[0]}${test[1]}`)
+          ) {
+            target.board.receiveAttack(test[0], test[1]);
+            this.moves.add(`${test[0]}${test[1]}`);
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    let hits = target.board.hits;
+
+    if (!tryOneNearHit(hits)) {
+      while (true) {
+        let [x, y] = [randOneToNine(), randOneToNine()];
+        if (!this.moves.has(`${x}${y}`)) {
+          target.board.receiveAttack(x, y);
+          break;
+        }
+      }
+    }
+
+    return;
   }
 }
 
